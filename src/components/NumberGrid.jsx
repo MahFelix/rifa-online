@@ -25,29 +25,27 @@ const NumberButton = styled(Button)`
   }
 `;
 
-// eslint-disable-next-line react/prop-types
 function NumberGrid({ soldNumbers, onNumberClick, searchNumber }) {
   const numbers = Array.from({ length: 2000 }, (_, i) => i + 1);
 
-    // Filtra os números se houver uma busca
-    const filteredNumbers = searchNumber
+  const filteredNumbers = searchNumber
     ? numbers.filter((num) => num.toString().startsWith(searchNumber))
     : numbers;
 
   return (
     <GridContainer>
-    {filteredNumbers.map((number) => (
-      <NumberButton
-        key={number}
-        sold={soldNumbers.includes(number)}
-        onClick={() => onNumberClick(number)}
-        disabled={soldNumbers.includes(number)}
-      >
-        {number}
-      </NumberButton>
-    ))}
-  </GridContainer>
-);
+      {filteredNumbers.map((number) => (
+        <NumberButton
+          key={number}
+          sold={soldNumbers.includes(number)}
+          onClick={() => onNumberClick(number)}
+          disabled={soldNumbers.includes(number)}
+        >
+          {number}
+        </NumberButton>
+      ))}
+    </GridContainer>
+  );
 }
 
 export default NumberGrid;
