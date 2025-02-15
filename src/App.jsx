@@ -10,7 +10,7 @@ import { collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore"
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#FF6F61",
+      main: "#6166ff",
     },
     secondary: {
       main: "#6B5B95",
@@ -21,7 +21,7 @@ const theme = createTheme({
 const AppContainer = styled.div`
   text-align: center;
   font-family: "Comic Sans MS", cursive, sans-serif;
-  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  background: linear-gradient(135deg, #f6d365 50%, #fda085 100%);
   min-height: 100vh;
   padding: 20px;
 `;
@@ -182,7 +182,7 @@ function App() {
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
             />
-            <p>Preço: R$ 10,00</p>
+            <p>Preço: R$ 5,00</p>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog} color="secondary">
