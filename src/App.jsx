@@ -116,25 +116,25 @@ function App() {
       setOpenSnackbar(true);
       return;
     }
-  
+
     try {
       // Monta a mensagem para o WhatsApp
       const phoneNumber = "+5579999163347"; // Ex: 5511999999999 (código do país + número)
       const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}`;
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-      
+
       // Marca os números como vendidos no Firebase
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
-      
+
       setSoldNumbers([...soldNumbers, ...docRefs.map((docRef, index) => ({ id: docRef.id, ...newSales[index] }))]);
-      
+
       setSnackbarMessage(`Números ${selectedNumbers.join(", ")} comprados com sucesso por ${buyerName}!`);
       setOpenSnackbar(true);
       setOpenDialog(false);
       setBuyerName("");
       setSelectedNumbers([]);
-      
+
       // Abre o WhatsApp
       window.open(whatsappUrl, "_blank");
     } catch (error) {
@@ -145,6 +145,10 @@ function App() {
   };
 
   const totalPrice = selectedNumbers.length * 5;
+
+  const filteredNumbers = Array.from({ length: 2000 }, (_, i) => i + 1).filter((number) => {
+    return searchNumber ? number.toString().includes(searchNumber) : true;
+  });
 
   const handleUnmarkNumber = async (numberId) => {
     try {
@@ -189,7 +193,7 @@ function App() {
           soldNumbers={soldNumbers.map((item) => item.number)}
           selectedNumbers={selectedNumbers}
           onNumberClick={handleNumberClick}
-          searchNumber={searchNumber}
+          numbers={filteredNumbers} // Passa a lista filtrada
         />
 
         <Dialog open={openDialog} onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}>

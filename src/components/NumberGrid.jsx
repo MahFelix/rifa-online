@@ -68,20 +68,34 @@ const NumberItem = styled.div`
   }
 `;
 
-function NumberGrid({ soldNumbers, selectedNumbers, onNumberClick, searchNumber }) {
+function NumberGrid({ soldNumbers, selectedNumbers, onNumberClick, numbers }) {
   return (
-    <NumberContainer>
-      {Array.from({ length: 2000 }, (_, i) => i + 1).map((number) => (
-        <NumberItem
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center" }}>
+      {numbers.map((number) => (
+        <div
           key={number}
-          sold={soldNumbers.includes(number)}
-          selected={selectedNumbers.includes(number)}
           onClick={() => onNumberClick(number)}
+          style={{
+            width: "50px",
+            height: "50px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: soldNumbers.includes(number)
+              ? "#ff6b6b"
+              : selectedNumbers.includes(number)
+              ? "#6166ff"
+              : "#f0f0f0",
+            color: soldNumbers.includes(number) || selectedNumbers.includes(number) ? "white" : "black",
+            borderRadius: "5px",
+            cursor: soldNumbers.includes(number) ? "not-allowed" : "pointer",
+            opacity: soldNumbers.includes(number) ? 0.6 : 1,
+          }}
         >
           {number}
-        </NumberItem>
+        </div>
       ))}
-    </NumberContainer>
+    </div>
   );
 }
 
