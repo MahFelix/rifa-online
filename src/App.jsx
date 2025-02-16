@@ -198,7 +198,7 @@ function App() {
             <TextField
               autoFocus
               margin="dense"
-              label="Seu Nome"
+              label="Seu Nome e Sobrenome"
               type="text"
               fullWidth
               value={buyerName}
@@ -213,7 +213,7 @@ function App() {
               Cancelar
             </Button>
             <Button onClick={handleBuyNumber} color="primary">
-              Whatsapp
+              COMPRAR
             </Button>
           </DialogActions>
         </Dialog>
