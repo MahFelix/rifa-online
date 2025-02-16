@@ -7,14 +7,12 @@ import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle, S
 import { db } from "./firebase";
 import { collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore";
 
+
+
 const theme = createTheme({
   palette: {
-    primary: {
-      main: "#6166ff",
-    },
-    secondary: {
-      main: "#6B5B95",
-    },
+    primary: { main: "#6166ff" },
+    secondary: { main: "#6B5B95" },
   },
 });
 
@@ -43,10 +41,22 @@ const SoldNumbersButton = styled(Button)`
   }
 `;
 
+const BuyButton = styled(Button)`
+  && {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    background-color: #4caf50;
+    color: white;
+    &:hover {
+      background-color: #66bb6a;
+    }
+  }
+`;
+
 function App() {
   const [soldNumbers, setSoldNumbers] = useState([]);
   const [searchNumber, setSearchNumber] = useState("");
-  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [selectedNumbers, setSelectedNumbers] = useState([]);
   const [buyerName, setBuyerName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -54,40 +64,50 @@ function App() {
   const [openSoldNumbersDialog, setOpenSoldNumbersDialog] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Verifica se o IP atual é o IP do admin
   useEffect(() => {
     const fetchAdminIP = async () => {
-      const querySnapshot = await getDocs(collection(db, "admin"));
-      const adminIP = querySnapshot.docs[0]?.data().ip;
+      try {
+        const querySnapshot = await getDocs(collection(db, "admin"));
+        const adminIP = querySnapshot.docs.length > 0 ? querySnapshot.docs[0].data().ip : null;
 
-      // Obtém o IP do usuário atual
-      const response = await fetch("https://api.ipify.org?format=json");
-      const data = await response.json();
-      const userIP = data.ip;
+        if (!adminIP) return;
 
-      // Verifica se o IP do usuário é o IP do admin
-      if (userIP === adminIP) {
-        setIsAdmin(true);
+        const response = await fetch("https://api.ipify.org?format=json");
+        const data = await response.json();
+
+        if (data.ip === adminIP) {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar IP do admin:", error);
       }
     };
 
     fetchAdminIP();
   }, []);
 
-  // Carrega os números vendidos do Firestore ao iniciar
   useEffect(() => {
     const fetchSoldNumbers = async () => {
-      const querySnapshot = await getDocs(collection(db, "soldNumbers"));
-      const numbers = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setSoldNumbers(numbers);
+      try {
+        const querySnapshot = await getDocs(collection(db, "soldNumbers"));
+        const numbers = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setSoldNumbers(numbers);
+      } catch (error) {
+        console.error("Erro ao buscar números vendidos:", error);
+      }
     };
 
     fetchSoldNumbers();
   }, []);
 
   const handleNumberClick = (number) => {
-    setSelectedNumber(number);
-    setOpenDialog(true);
+    if (soldNumbers.some((item) => item.number === number)) return; // Impede seleção de números vendidos
+
+    if (selectedNumbers.includes(number)) {
+      setSelectedNumbers(selectedNumbers.filter((n) => n !== number));
+    } else {
+      setSelectedNumbers([...selectedNumbers, number]);
+    }
   };
 
   const handleBuyNumber = async () => {
@@ -96,53 +116,46 @@ function App() {
       setOpenSnackbar(true);
       return;
     }
-
-    const newSale = { number: selectedNumber, buyer: buyerName };
-
+  
     try {
-      // Adiciona o número vendido ao Firestore
-      await addDoc(collection(db, "soldNumbers"), newSale);
-      setSoldNumbers([...soldNumbers, newSale]);
+      // Monta a mensagem para o WhatsApp
+      const phoneNumber = "+5579999163347"; // Ex: 5511999999999 (código do país + número)
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}`;
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Marca os números como vendidos no Firebase
+      const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
+      const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
+      
+      setSoldNumbers([...soldNumbers, ...docRefs.map((docRef, index) => ({ id: docRef.id, ...newSales[index] }))]);
+      
+      setSnackbarMessage(`Números ${selectedNumbers.join(", ")} comprados com sucesso por ${buyerName}!`);
+      setOpenSnackbar(true);
       setOpenDialog(false);
       setBuyerName("");
-      setSnackbarMessage(`Número ${selectedNumber} comprado com sucesso por ${buyerName}!`);
-      setOpenSnackbar(true);
+      setSelectedNumbers([]);
+      
+      // Abre o WhatsApp
+      window.open(whatsappUrl, "_blank");
     } catch (error) {
-      console.error("Erro ao salvar no Firestore: ", error);
+      console.error("Erro ao registrar a compra:", error);
       setSnackbarMessage("Erro ao processar a compra. Tente novamente.");
       setOpenSnackbar(true);
     }
   };
 
+  const totalPrice = selectedNumbers.length * 5;
+
   const handleUnmarkNumber = async (numberId) => {
     try {
-      // Remove o número vendido do Firestore
       await deleteDoc(doc(db, "soldNumbers", numberId));
       setSoldNumbers(soldNumbers.filter((item) => item.id !== numberId));
       setSnackbarMessage("Número desmarcado com sucesso!");
-      setOpenSnackbar(true);
     } catch (error) {
-      console.error("Erro ao desmarcar número: ", error);
+      console.error("Erro ao desmarcar número:", error);
       setSnackbarMessage("Erro ao desmarcar número. Tente novamente.");
-      setOpenSnackbar(true);
     }
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setBuyerName("");
-  };
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
-
-  const handleOpenSoldNumbersDialog = () => {
-    setOpenSoldNumbersDialog(true);
-  };
-
-  const handleCloseSoldNumbersDialog = () => {
-    setOpenSoldNumbersDialog(false);
+    setOpenSnackbar(true);
   };
 
   return (
@@ -159,19 +172,28 @@ function App() {
             onChange={(e) => setSearchNumber(e.target.value)}
             sx={{ backgroundColor: "white", borderRadius: "5px", width: "300px" }}
           />
-          <SoldNumbersButton variant="contained" onClick={handleOpenSoldNumbersDialog}>
+          <SoldNumbersButton variant="contained" onClick={() => setOpenSoldNumbersDialog(true)}>
             Ver Números Vendidos ({soldNumbers.length})
           </SoldNumbersButton>
         </SearchContainer>
 
+        <BuyButton
+          variant="contained"
+          onClick={() => setOpenDialog(true)}
+          disabled={selectedNumbers.length === 0}
+        >
+          Comprar Números Selecionados ({selectedNumbers.length}) - Total: R$ {totalPrice.toFixed(2)}
+        </BuyButton>
+
         <NumberGrid
           soldNumbers={soldNumbers.map((item) => item.number)}
+          selectedNumbers={selectedNumbers}
           onNumberClick={handleNumberClick}
           searchNumber={searchNumber}
         />
 
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>Comprar Número {selectedNumber}</DialogTitle>
+        <Dialog open={openDialog} onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}>
+          <DialogTitle>Comprar Números Selecionados</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
@@ -182,19 +204,21 @@ function App() {
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
             />
-            <p>Preço: R$ 5,00</p>
+            <p>Números Selecionados: {selectedNumbers.join(", ")}</p>
+            <p>Preço Total: R$ {totalPrice.toFixed(2)}</p>
+            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento</h3>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog} color="secondary">
+            <Button onClick={() => setOpenDialog(false)} color="secondary">
               Cancelar
             </Button>
             <Button onClick={handleBuyNumber} color="primary">
-              Comprar
+              Whatsapp
             </Button>
           </DialogActions>
         </Dialog>
 
-        <Dialog open={openSoldNumbersDialog} onClose={handleCloseSoldNumbersDialog}>
+        <Dialog open={openSoldNumbersDialog} onClose={() => setOpenSoldNumbersDialog(false)}>
           <DialogTitle>Números Vendidos</DialogTitle>
           <DialogContent>
             {soldNumbers.length === 0 ? (
@@ -205,11 +229,7 @@ function App() {
                   <li key={item.id}>
                     Número {item.number} - Comprado por: {item.buyer}
                     {isAdmin && (
-                      <Button
-                        color="secondary"
-                        onClick={() => handleUnmarkNumber(item.id)}
-                        style={{ marginLeft: "10px" }}
-                      >
+                      <Button color="secondary" onClick={() => handleUnmarkNumber(item.id)} style={{ marginLeft: "10px" }}>
                         Desmarcar
                       </Button>
                     )}
@@ -219,18 +239,13 @@ function App() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseSoldNumbersDialog} color="primary">
+            <Button onClick={() => setOpenSoldNumbersDialog(false)} color="primary">
               Fechar
             </Button>
           </DialogActions>
         </Dialog>
 
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          message={snackbarMessage}
-        />
+        <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)} message={snackbarMessage} />
       </AppContainer>
     </ThemeProvider>
   );
