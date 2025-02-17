@@ -4,10 +4,9 @@ import NumberGrid from "./components/NumberGrid";
 import Header from "./components/Header";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar } from "@mui/material";
-import { db } from "./firebase";
+import { db, auth } from "./firebase"; // Importe o auth do Firebase
 import { collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore";
-
-
+import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Importe as funções de autenticação
 
 const theme = createTheme({
   palette: {
@@ -63,28 +62,9 @@ function App() {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSoldNumbersDialog, setOpenSoldNumbersDialog] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const fetchAdminIP = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "admin"));
-        const adminIP = querySnapshot.docs.length > 0 ? querySnapshot.docs[0].data().ip : null;
-
-        if (!adminIP) return;
-
-        const response = await fetch("https://api.ipify.org?format=json");
-        const data = await response.json();
-
-        if (data.ip === adminIP) {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error("Erro ao verificar IP do admin:", error);
-      }
-    };
-
-    fetchAdminIP();
-  }, []);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchSoldNumbers = async () => {
@@ -101,7 +81,7 @@ function App() {
   }, []);
 
   const handleNumberClick = (number) => {
-    if (soldNumbers.some((item) => item.number === number)) return; // Impede seleção de números vendidos
+    if (soldNumbers.some((item) => item.number === number)) return;
 
     if (selectedNumbers.includes(number)) {
       setSelectedNumbers(selectedNumbers.filter((n) => n !== number));
@@ -118,12 +98,9 @@ function App() {
     }
 
     try {
-      // Monta a mensagem para o WhatsApp
-      const phoneNumber = ["+5579999163347", "+5579996793694"];// Ex: 5511999999999 (código do país + número)
-      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}` `*Os números serão validados após envio do comprovante de pagamento*`;
-      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      const phoneNumbers = ["+5579999163347", "+5579996793694"];
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*`;
 
-      // Marca os números como vendidos no Firebase
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
 
@@ -135,8 +112,10 @@ function App() {
       setBuyerName("");
       setSelectedNumbers([]);
 
-      // Abre o WhatsApp
-      window.open(whatsappUrl, "_blank");
+      phoneNumbers.forEach(phoneNumber => {
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, "_blank");
+      });
     } catch (error) {
       console.error("Erro ao registrar a compra:", error);
       setSnackbarMessage("Erro ao processar a compra. Tente novamente.");
@@ -162,6 +141,35 @@ function App() {
     setOpenSnackbar(true);
   };
 
+  const handleAdminLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+      if (userCredential.user) {
+        setIsAdmin(true);
+        setLoginDialogOpen(false);
+        setSnackbarMessage("Login realizado com sucesso!");
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error("Erro ao fazer login:", error);
+      setSnackbarMessage("Erro ao fazer login. Verifique suas credenciais.");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleAdminLogout = async () => {
+    try {
+      await signOut(auth);
+      setIsAdmin(false);
+      setSnackbarMessage("Logout realizado com sucesso!");
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      setSnackbarMessage("Erro ao fazer logout.");
+      setOpenSnackbar(true);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <AppContainer>
@@ -179,6 +187,15 @@ function App() {
           <SoldNumbersButton variant="contained" onClick={() => setOpenSoldNumbersDialog(true)}>
             Ver Números Vendidos ({soldNumbers.length})
           </SoldNumbersButton>
+          {!isAdmin ? (
+            <Button variant="contained" color="secondary" onClick={() => setLoginDialogOpen(true)}>
+              Login Admin
+            </Button>
+          ) : (
+            <Button variant="contained" color="secondary" onClick={handleAdminLogout}>
+              Logout Admin
+            </Button>
+          )}
         </SearchContainer>
 
         <BuyButton
@@ -193,7 +210,7 @@ function App() {
           soldNumbers={soldNumbers.map((item) => item.number)}
           selectedNumbers={selectedNumbers}
           onNumberClick={handleNumberClick}
-          numbers={filteredNumbers} // Passa a lista filtrada
+          numbers={filteredNumbers}
         />
 
         <Dialog open={openDialog} onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}>
@@ -245,6 +262,37 @@ function App() {
           <DialogActions>
             <Button onClick={() => setOpenSoldNumbersDialog(false)} color="primary">
               Fechar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
+          <DialogTitle>Login Admin</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Email"
+              type="email"
+              fullWidth
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              label="Senha"
+              type="password"
+              fullWidth
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setLoginDialogOpen(false)} color="secondary">
+              Cancelar
+            </Button>
+            <Button onClick={handleAdminLogin} color="primary">
+              Login
             </Button>
           </DialogActions>
         </Dialog>
