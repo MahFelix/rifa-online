@@ -101,7 +101,7 @@ function App() {
 
     try {
       const phoneNumbers = ["+5579996793694","+5579999163347"];
-      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*`;
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\n Segue meu pix(CPF):\n *064.315.635-65* `;
 
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
