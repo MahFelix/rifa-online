@@ -119,7 +119,7 @@ function App() {
 
     try {
       // Monta a mensagem para o WhatsApp
-      const phoneNumber = "+5579999163347"; // Ex: 5511999999999 (código do país + número)
+      const phoneNumber = ["+5579999163347", "+5579996793694"];// Ex: 5511999999999 (código do país + número)
       const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}`;
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
