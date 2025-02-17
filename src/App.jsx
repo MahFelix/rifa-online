@@ -120,7 +120,7 @@ function App() {
     try {
       // Monta a mensagem para o WhatsApp
       const phoneNumber = ["+5579999163347", "+5579996793694"];// Ex: 5511999999999 (código do país + número)
-      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}`;
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}` `*Os números serão validados após envio do comprovante de pagamento*`;
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
       // Marca os números como vendidos no Firebase
