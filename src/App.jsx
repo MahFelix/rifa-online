@@ -98,7 +98,7 @@ function App() {
     }
 
     try {
-      const phoneNumbers = ["+5579999163347", "+5579996793694"];
+      const phoneNumbers = ["+5579996793694","+5579999163347"];
       const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*`;
 
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
