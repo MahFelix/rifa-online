@@ -101,7 +101,7 @@ function App() {
 
     try {
       const phoneNumbers = ["+5579996793694","+5579999163347"];
-      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\n Segue meu pix(CPF):\n *064.315.635-65* `;
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\n Segue meu pix(CPF):\n *064.315.635-65*\n Victor Hugo `;
 
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
@@ -232,7 +232,7 @@ function App() {
             />
             <p>Números Selecionados: {selectedNumbers.join(", ")}</p>
             <p>Preço Total: R$ {totalPrice.toFixed(2)}</p>
-            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento<br></br> Pix(CPF): 064.315.635-65</h3>
+            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento<br></br> Victor Hugo <br></br>Pix(CPF): 064.315.635-65</h3>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)} color="secondary">
