@@ -232,7 +232,7 @@ function App() {
             />
             <p>Números Selecionados: {selectedNumbers.join(", ")}</p>
             <p>Preço Total: R$ {totalPrice.toFixed(2)}</p>
-            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento</h3>
+            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento<br></br> Pix(CPF): 064.315.635-65</h3>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)} color="secondary">
