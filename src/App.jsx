@@ -189,11 +189,11 @@ function App() {
           </SoldNumbersButton>
           {!isAdmin ? (
             <Button variant="contained" color="secondary" onClick={() => setLoginDialogOpen(true)}>
-              Login Admin
+              Login
             </Button>
           ) : (
             <Button variant="contained" color="secondary" onClick={handleAdminLogout}>
-              Logout Admin
+              Logout
             </Button>
           )}
         </SearchContainer>
