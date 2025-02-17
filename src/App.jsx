@@ -7,6 +7,8 @@ import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle, S
 import { db, auth } from "./firebase"; // Importe o auth do Firebase
 import { collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Importe as funções de autenticação
+import Carousel from "./components/Carousel";
+import GlobalStyle from "./styles/globalStyles";
 
 const theme = createTheme({
   palette: {
@@ -172,9 +174,12 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <GlobalStyle/>
+    
       <AppContainer>
+       
         <Header />
-
+        <Carousel/>
         <SearchContainer>
           <TextField
             label="Buscar número"
