@@ -3,12 +3,19 @@ import styled from "styled-components";
 import NumberGrid from "./components/NumberGrid";
 import Header from "./components/Header";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar } from "@mui/material";
-import { db, auth } from "./firebase"; // Importe o auth do Firebase
+import { db, auth } from "./firebase";
 import { collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Importe as funções de autenticação
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import Carousel from "./components/Carousel";
 import GlobalStyle from "./styles/globalStyles";
+import SearchBar from "./components/SearchBar";
+import BuyButton from "./components/BuyButton";
+import SoldNumbersButton from "./components/SoldNumbers";
+import BuyDialog from "./components/BuyDialog";
+import PaymentDialog from "./components/PaymentDialog";
+import SoldNumbersDialog from "./components/SoldNumberDialog";
+import LoginDialog from "./components/LoginDialog";
+import SnackbarNotification from "./components/SnackbarNotification";
 
 const theme = createTheme({
   palette: {
@@ -32,27 +39,9 @@ const SearchContainer = styled.div`
   margin-bottom: 20px;
 `;
 
-const SoldNumbersButton = styled(Button)`
-  && {
-    background-color: #6B5B95;
-    color: white;
-    &:hover {
-      background-color: #7C6BA0;
-    }
-  }
-`;
-
-const BuyButton = styled(Button)`
-  && {
-    margin-top: 10px;
-    margin-bottom: 20px;
-    background-color: #4caf50;
-    color: white;
-    &:hover {
-      background-color: #66bb6a;
-    }
-  }
-`;
+const Button = styled.button`
+  
+`
 
 function App() {
   const [soldNumbers, setSoldNumbers] = useState([]);
@@ -60,6 +49,7 @@ function App() {
   const [selectedNumbers, setSelectedNumbers] = useState([]);
   const [buyerName, setBuyerName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
+  const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSoldNumbersDialog, setOpenSoldNumbersDialog] = useState(false);
@@ -67,6 +57,7 @@ function App() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [soldNumbersSearch, setSoldNumbersSearch] = useState("");
 
   useEffect(() => {
     const fetchSoldNumbers = async () => {
@@ -81,6 +72,11 @@ function App() {
 
     fetchSoldNumbers();
   }, []);
+
+  const handleBuyClick = () => {
+    setOpenDialog(false); // Fecha o BuyDialog
+    setOpenPaymentDialog(true); // Abre o PaymentDialog
+  };
 
   const handleNumberClick = (number) => {
     if (soldNumbers.some((item) => item.number === number)) return;
@@ -110,7 +106,7 @@ function App() {
 
       setSnackbarMessage(`Números ${selectedNumbers.join(", ")} comprados com sucesso por ${buyerName}!`);
       setOpenSnackbar(true);
-      setOpenDialog(false);
+      setOpenPaymentDialog(false);
       setBuyerName("");
       setSelectedNumbers([]);
 
@@ -172,26 +168,19 @@ function App() {
     }
   };
 
+  const filteredSoldNumbers = soldNumbers.filter((item) =>
+    item.number.toString().includes(soldNumbersSearch)
+  );
+
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle/>
-    
       <AppContainer>
-       
         <Header />
         <Carousel/>
         <SearchContainer>
-          <TextField
-            label="Buscar número"
-            variant="outlined"
-            type="number"
-            value={searchNumber}
-            onChange={(e) => setSearchNumber(e.target.value)}
-            sx={{ backgroundColor: "white", borderRadius: "5px", width: "300px" }}
-          />
-          <SoldNumbersButton variant="contained" onClick={() => setOpenSoldNumbersDialog(true)}>
-            Ver Números Vendidos ({soldNumbers.length})
-          </SoldNumbersButton>
+          <SearchBar value={searchNumber} onChange={(e) => setSearchNumber(e.target.value)} />
+          <SoldNumbersButton onClick={() => setOpenSoldNumbersDialog(true)} soldNumbersCount={soldNumbers.length} />
           {!isAdmin ? (
             <Button variant="contained" color="secondary" onClick={() => setLoginDialogOpen(true)}>
               Login
@@ -204,12 +193,11 @@ function App() {
         </SearchContainer>
 
         <BuyButton
-          variant="contained"
           onClick={() => setOpenDialog(true)}
           disabled={selectedNumbers.length === 0}
-        >
-          Comprar Números Selecionados ({selectedNumbers.length}) - Total: R$ {totalPrice.toFixed(2)}
-        </BuyButton>
+          selectedNumbers={selectedNumbers}
+          totalPrice={totalPrice}
+        />
 
         <NumberGrid
           soldNumbers={soldNumbers.map((item) => item.number)}
@@ -218,91 +206,49 @@ function App() {
           numbers={filteredNumbers}
         />
 
-        <Dialog open={openDialog} onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}>
-          <DialogTitle>Comprar Números Selecionados</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Seu Nome e Sobrenome"
-              type="text"
-              fullWidth
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-            />
-            <p>Números Selecionados: {selectedNumbers.join(", ")}</p>
-            <p>Preço Total: R$ {totalPrice.toFixed(2)}</p>
-            <h3>Todos os números serão validados via whatsapp, após o envio do comprovante de pagamento<br></br> Victor Hugo <br></br>Pix(CPF): 064.315.635-65</h3>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)} color="secondary">
-              Cancelar
-            </Button>
-            <Button onClick={handleBuyNumber} color="primary">
-              COMPRAR
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <BuyDialog
+          open={openDialog}
+          onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}
+          buyerName={buyerName}
+          onBuyerNameChange={(e) => setBuyerName(e.target.value)}
+          selectedNumbers={selectedNumbers}
+          totalPrice={totalPrice}
+          onBuyClick={handleBuyClick}
+        />
 
-        <Dialog open={openSoldNumbersDialog} onClose={() => setOpenSoldNumbersDialog(false)}>
-          <DialogTitle>Números Vendidos</DialogTitle>
-          <DialogContent>
-            {soldNumbers.length === 0 ? (
-              <p>Nenhum número vendido ainda.</p>
-            ) : (
-              <ul>
-                {soldNumbers.map((item) => (
-                  <li key={item.id}>
-                    Número {item.number} - Comprado por: {item.buyer}
-                    {isAdmin && (
-                      <Button color="secondary" onClick={() => handleUnmarkNumber(item.id)} style={{ marginLeft: "10px" }}>
-                        Desmarcar
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenSoldNumbersDialog(false)} color="primary">
-              Fechar
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <PaymentDialog
+          open={openPaymentDialog}
+          onClose={() => setOpenPaymentDialog(false)}
+          selectedNumbers={selectedNumbers}
+          totalPrice={totalPrice}
+          onConfirmPayment={handleBuyNumber} 
+        />
 
-        <Dialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
-          <DialogTitle>Login Admin</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Email"
-              type="email"
-              fullWidth
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-            />
-            <TextField
-              margin="dense"
-              label="Senha"
-              type="password"
-              fullWidth
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setLoginDialogOpen(false)} color="secondary">
-              Cancelar
-            </Button>
-            <Button onClick={handleAdminLogin} color="primary">
-              Login
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <SoldNumbersDialog
+          open={openSoldNumbersDialog}
+          onClose={() => setOpenSoldNumbersDialog(false)}
+          soldNumbersSearch={soldNumbersSearch}
+          onSoldNumbersSearchChange={(e) => setSoldNumbersSearch(e.target.value)}
+          filteredSoldNumbers={filteredSoldNumbers}
+          isAdmin={isAdmin}
+          onUnmarkNumber={handleUnmarkNumber}
+        />
 
-        <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)} message={snackbarMessage} />
+        <LoginDialog
+          open={loginDialogOpen}
+          onClose={() => setLoginDialogOpen(false)}
+          adminEmail={adminEmail}
+          onAdminEmailChange={(e) => setAdminEmail(e.target.value)}
+          adminPassword={adminPassword}
+          onAdminPasswordChange={(e) => setAdminPassword(e.target.value)}
+          onLogin={handleAdminLogin}
+        />
+
+        <SnackbarNotification
+          open={openSnackbar}
+          onClose={() => setOpenSnackbar(false)}
+          message={snackbarMessage}
+        />
       </AppContainer>
     </ThemeProvider>
   );
