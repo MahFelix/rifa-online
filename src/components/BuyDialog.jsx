@@ -2,6 +2,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from "@mui/material";
 
 const BuyDialog = ({ open, onClose, buyerName, onBuyerNameChange, selectedNumbers, totalPrice, onBuyClick }) => {
+    
   // Verifica se o campo "Nome e Sobrenome" está preenchido
   const isBuyerNameValid = buyerName.trim() !== "";
 
