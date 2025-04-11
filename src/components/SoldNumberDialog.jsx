@@ -1,35 +1,77 @@
 /* eslint-disable react/prop-types */
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Box } from "@mui/material";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from "@mui/material";
-
-const SoldNumbersDialog = ({ open, onClose, soldNumbersSearch, onSoldNumbersSearchChange, filteredSoldNumbers, isAdmin, onUnmarkNumber }) => {
+const SoldNumbersDialog = ({ 
+  open, 
+  onClose, 
+  soldNumbersSearch, 
+  onSoldNumbersSearchChange, 
+  filteredSoldNumbers, 
+  isAdmin, 
+  onUnmarkNumber,
+  searchType,
+  onSearchTypeChange 
+}) => {
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Números Vendidos</DialogTitle>
       <DialogContent>
-        <TextField
-          label="Buscar número vendido"
-          variant="outlined"
-          type="number"
-          value={soldNumbersSearch}
-          onChange={onSoldNumbersSearchChange}
-          sx={{ backgroundColor: "white", borderRadius: "5px", width: "100%", marginBottom: "20px" }}
-        />
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <TextField
+            label={searchType === 'number' ? "Buscar número vendido" : "Buscar comprador"}
+            variant="outlined"
+            type={searchType === 'number' ? "number" : "text"}
+            value={soldNumbersSearch}
+            onChange={onSoldNumbersSearchChange}
+            sx={{ backgroundColor: "white", borderRadius: "5px", flexGrow: 1 }}
+          />
+          <Select
+            value={searchType}
+            onChange={onSearchTypeChange}
+            sx={{ backgroundColor: "white" }}
+          >
+            <MenuItem value="number">Número</MenuItem>
+            <MenuItem value="name">Nome</MenuItem>
+          </Select>
+        </Box>
+        
         {filteredSoldNumbers.length === 0 ? (
           <p>Nenhum número vendido encontrado.</p>
         ) : (
-          <ul>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+            gap: '10px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            padding: '5px'
+          }}>
             {filteredSoldNumbers.map((item) => (
-              <li key={item.id}>
-                Número {item.number} - Comprado por: {item.buyer}
+              <div key={item.id} style={{
+                backgroundColor: '#f5f5f5',
+                padding: '10px',
+                borderRadius: '5px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <strong>Número {item.number}</strong><br />
+                  Comprado por: {item.buyer || 'Não informado'}
+                </div>
                 {isAdmin && (
-                  <Button color="secondary" onClick={() => onUnmarkNumber(item.id)} style={{ marginLeft: "10px" }}>
+                  <Button 
+                    variant="outlined" 
+                    color="error" 
+                    size="small"
+                    onClick={() => onUnmarkNumber(item.id)}
+                  >
                     Desmarcar
                   </Button>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </DialogContent>
       <DialogActions>

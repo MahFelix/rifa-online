@@ -1,6 +1,5 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-
 import styled from "styled-components";
 
 const NumberContainer = styled.div`
@@ -26,76 +25,57 @@ const NumberContainer = styled.div`
 `;
 
 const NumberItem = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${({ sold, selected }) => (sold ? "#e7ffcc" : selected ? "#ccffcc" : "#f0f0f0")};
+  background-color: ${({ sold, selected, highlighted }) => 
+    highlighted ? '#ffeb3b' : 
+    sold ? '#ff6b6b' : 
+    selected ? '#6166ff' : '#f0f0f0'};
+  color: ${({ sold, selected, highlighted }) => 
+    (sold || selected || highlighted) ? 'white' : 'black'};
   cursor: ${({ sold }) => (sold ? "not-allowed" : "pointer")};
   border-radius: 5px;
   border: 1px solid #ccc;
   position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
+  opacity: ${({ sold }) => (sold ? 0.6 : 1)};
 
   &:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: ${({ selected }) => (selected ? "2px solid #4caf50" : "none")};
-    border-radius: 5px;
-    pointer-events: none;
-  }
-
   @media (max-width: 768px) {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     font-size: 0.9em;
   }
 
   @media (max-width: 480px) {
-    width: 30px;
-    height: 30px;
+    width: 35px;
+    height: 35px;
     font-size: 0.8em;
   }
 `;
 
-function NumberGrid({ soldNumbers, selectedNumbers, onNumberClick, numbers }) {
+function NumberGrid({ soldNumbers, selectedNumbers, onNumberClick, numbers, highlightedNumbers = [] }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center" }}>
+    <NumberContainer>
       {numbers.map((number) => (
-        <div
+        <NumberItem
           key={number}
-          onClick={() => onNumberClick(number)}
-          style={{
-            width: "50px",
-            height: "50px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: soldNumbers.includes(number)
-              ? "#ff6b6b"
-              : selectedNumbers.includes(number)
-              ? "#6166ff"
-              : "#f0f0f0",
-            color: soldNumbers.includes(number) || selectedNumbers.includes(number) ? "white" : "black",
-            borderRadius: "5px",
-            cursor: soldNumbers.includes(number) ? "not-allowed" : "pointer",
-            opacity: soldNumbers.includes(number) ? 0.6 : 1,
-          }}
+          sold={soldNumbers.includes(number)}
+          selected={selectedNumbers.includes(number)}
+          highlighted={highlightedNumbers.includes(number)}
+          onClick={() => !soldNumbers.includes(number) && onNumberClick(number)}
         >
           {number}
-        </div>
+        </NumberItem>
       ))}
-    </div>
+    </NumberContainer>
   );
 }
 

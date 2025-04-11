@@ -39,13 +39,12 @@ const SearchContainer = styled.div`
   margin-bottom: 20px;
 `;
 
-const Button = styled.button`
-  
-`
+const Button = styled.button``;
 
 function App() {
   const [soldNumbers, setSoldNumbers] = useState([]);
-  const [searchNumber, setSearchNumber] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState("number");
   const [selectedNumbers, setSelectedNumbers] = useState([]);
   const [buyerName, setBuyerName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
@@ -57,7 +56,6 @@ function App() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [soldNumbersSearch, setSoldNumbersSearch] = useState("");
 
   useEffect(() => {
     const fetchSoldNumbers = async () => {
@@ -74,8 +72,8 @@ function App() {
   }, []);
 
   const handleBuyClick = () => {
-    setOpenDialog(false); // Fecha o BuyDialog
-    setOpenPaymentDialog(true); // Abre o PaymentDialog
+    setOpenDialog(false);
+    setOpenPaymentDialog(true);
   };
 
   const handleNumberClick = (number) => {
@@ -94,24 +92,23 @@ function App() {
       setOpenSnackbar(true);
       return;
     }
-  
+
     try {
-      const phoneNumbers = ["5579996793344"]; // Remova o + do número
-      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\nSegue meu pix(CPF):\n*064.315.635-65*\n*Victor Hugo* `;
-  
+      const phoneNumbers = ["5579996793694"];
+      const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\nSegue meu pix(CPF):\n*064.315.635-65*\n*Victor Hugo*`;
+
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
-  
+
       setSoldNumbers([...soldNumbers, ...docRefs.map((docRef, index) => ({ id: docRef.id, ...newSales[index] }))]);
-  
+
       setSnackbarMessage(`Números ${selectedNumbers.join(", ")} comprados com sucesso por ${buyerName}!`);
       setOpenSnackbar(true);
       setOpenPaymentDialog(false);
       setBuyerName("");
       setSelectedNumbers([]);
-  
-      phoneNumbers.forEach(phoneNumber => {
-        // Modifique a URL para usar o formato que não requer o número nos contatos
+
+      phoneNumbers.forEach((phoneNumber) => {
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, "_blank");
       });
@@ -125,8 +122,23 @@ function App() {
   const totalPrice = selectedNumbers.length * 5;
 
   const filteredNumbers = Array.from({ length: 2000 }, (_, i) => i + 1).filter((number) => {
-    return searchNumber ? number.toString().includes(searchNumber) : true;
+    return searchTerm && searchType === "number" ? number.toString().includes(searchTerm) : true;
   });
+
+  const filteredSoldNumbers = soldNumbers.filter((item) => {
+    if (!searchTerm) return true;
+    if (searchType === "number") {
+      return item.number.toString().includes(searchTerm);
+    } else {
+      return item.buyer?.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+  });
+
+  const highlightedNumbers = searchType === "name" && searchTerm
+    ? soldNumbers
+        .filter((item) => item.buyer?.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map((item) => item.number)
+    : [];
 
   const handleUnmarkNumber = async (numberId) => {
     try {
@@ -169,19 +181,23 @@ function App() {
     }
   };
 
-  const filteredSoldNumbers = soldNumbers.filter((item) =>
-    item.number.toString().includes(soldNumbersSearch)
-  );
-
   return (
     <ThemeProvider theme={theme}>
-      <GlobalStyle/>
+      <GlobalStyle />
       <AppContainer>
         <Header />
-        <Carousel/>
+        <Carousel />
         <SearchContainer>
-          <SearchBar value={searchNumber} onChange={(e) => setSearchNumber(e.target.value)} />
-          <SoldNumbersButton onClick={() => setOpenSoldNumbersDialog(true)} soldNumbersCount={soldNumbers.length} />
+          <SearchBar
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            searchType={searchType}
+            onSearchTypeChange={(e) => setSearchType(e.target.value)}
+          />
+          <SoldNumbersButton
+            onClick={() => setOpenSoldNumbersDialog(true)}
+            soldNumbersCount={soldNumbers.length}
+          />
           {!isAdmin ? (
             <Button variant="contained" color="secondary" onClick={() => setLoginDialogOpen(true)}>
               Login
@@ -205,11 +221,15 @@ function App() {
           selectedNumbers={selectedNumbers}
           onNumberClick={handleNumberClick}
           numbers={filteredNumbers}
+          highlightedNumbers={highlightedNumbers}
         />
 
         <BuyDialog
           open={openDialog}
-          onClose={() => { setOpenDialog(false); setSelectedNumbers([]); }}
+          onClose={() => {
+            setOpenDialog(false);
+            setSelectedNumbers([]);
+          }}
           buyerName={buyerName}
           onBuyerNameChange={(e) => setBuyerName(e.target.value)}
           selectedNumbers={selectedNumbers}
@@ -222,17 +242,19 @@ function App() {
           onClose={() => setOpenPaymentDialog(false)}
           selectedNumbers={selectedNumbers}
           totalPrice={totalPrice}
-          onConfirmPayment={handleBuyNumber} 
+          onConfirmPayment={handleBuyNumber}
         />
 
         <SoldNumbersDialog
           open={openSoldNumbersDialog}
           onClose={() => setOpenSoldNumbersDialog(false)}
-          soldNumbersSearch={soldNumbersSearch}
-          onSoldNumbersSearchChange={(e) => setSoldNumbersSearch(e.target.value)}
+          soldNumbersSearch={searchTerm}
+          onSoldNumbersSearchChange={(e) => setSearchTerm(e.target.value)}
           filteredSoldNumbers={filteredSoldNumbers}
           isAdmin={isAdmin}
           onUnmarkNumber={handleUnmarkNumber}
+          searchType={searchType}
+          onSearchTypeChange={(e) => setSearchType(e.target.value)}
         />
 
         <LoginDialog
