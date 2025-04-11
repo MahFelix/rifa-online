@@ -94,24 +94,25 @@ function App() {
       setOpenSnackbar(true);
       return;
     }
-
+  
     try {
-      const phoneNumbers = ["+5579996793694"];
+      const phoneNumbers = ["5579996793344"]; // Remova o + do número
       const message = `Olá! Gostaria de comprar os seguintes números: ${selectedNumbers.join(", ")} \nNome: ${buyerName} \nValor Total: R$ ${totalPrice.toFixed(2)}\n*Os números serão validados após envio do comprovante de pagamento*\nSegue meu pix(CPF):\n*064.315.635-65*\n*Victor Hugo* `;
-
+  
       const newSales = selectedNumbers.map((number) => ({ number, buyer: buyerName }));
       const docRefs = await Promise.all(newSales.map((sale) => addDoc(collection(db, "soldNumbers"), sale)));
-
+  
       setSoldNumbers([...soldNumbers, ...docRefs.map((docRef, index) => ({ id: docRef.id, ...newSales[index] }))]);
-
+  
       setSnackbarMessage(`Números ${selectedNumbers.join(", ")} comprados com sucesso por ${buyerName}!`);
       setOpenSnackbar(true);
       setOpenPaymentDialog(false);
       setBuyerName("");
       setSelectedNumbers([]);
-
+  
       phoneNumbers.forEach(phoneNumber => {
-        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        // Modifique a URL para usar o formato que não requer o número nos contatos
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, "_blank");
       });
     } catch (error) {
